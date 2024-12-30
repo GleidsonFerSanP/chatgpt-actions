@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Google Contacts API
+  description: Fetch all Google Contacts using the People API.
+  version: 1.0.0
+servers:
+  - url: https://b0es2hb9q7.execute-api.us-east-1.amazonaws.com/default
+    description: API Gateway endpoint for Lambda
+paths:
+  /google-search-contacts-agent-action:
+    get:
+      operationId: getGoogleContacts
+      summary: Fetch all Google Contacts
+      description: Retrieve all contacts from the authenticated Google account, including names, email addresses, and phone numbers.
+      responses:
+        '200':
+          description: A list of contacts retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: The display name of the contact.
+                          example: John Doe
+                        email:
+                          type: string
+                          description: The primary email address of the contact.
+                          example: john.doe@example.com
+                        phone:
+                          type: string
+                          description: The primary phone number of the contact.
+                          example: "+1234567890"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to fetch contacts due to an API error.

@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: Google Calendar Event Deletion API
+  description: An API to delete a specific Google Calendar event by its ID.
+  version: 1.0.0
+servers:
+  - url: https://b0es2hb9q7.execute-api.us-east-1.amazonaws.com/default
+    description: API Gateway endpoint for Lambda
+paths:
+  /calendar-delete-event-agent-action:
+    delete:
+      operationId: deleteGoogleCalendarEvent
+      summary: Delete a Google Calendar Event
+      description: Deletes a Google Calendar event using its unique ID.
+      parameters:
+        - in: query
+          name: eventId
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the Google Calendar event to delete.
+      responses:
+        '200':
+          description: Event deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Event with ID your-event-id has been deleted.
+        '400':
+          description: Bad Request - Missing or invalid eventId parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing required parameter eventId
+        '500':
+          description: Internal Server Error - Failed to delete the event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to delete the event.
+                  details:
+                    type: string
+                    example: Event not found or API error.

@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Email Attributes Schema
+  description: OpenAPI schema for mapping email attributes.
+  version: 1.0.0
+servers:
+  - url: https://b0es2hb9q7.execute-api.us-east-1.amazonaws.com/default
+    description: API Gateway endpoint for Lambda
+paths:
+  /send-email-agent-action:
+    post:
+      operationId: sendEmail
+      summary: Send an email
+      description: Endpoint to send an email with specified attributes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  description: The recipient's email address.
+                  example: recipient@example.com
+                subject:
+                  type: string
+                  description: The subject of the email.
+                  example: Meeting Reminder
+                text:
+                  type: string
+                  description: The plain text content of the email.
+                  example: This is a reminder for our meeting tomorrow.
+                html:
+                  type: string
+                  description: The HTML content of the email.
+                  example: "<p>This is a <strong>reminder</strong> for our meeting tomorrow.</p>"
+      responses:
+        '200':
+          description: Email sent successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message.
+                    example: Email has been sent successfully.
