@@ -1,0 +1,15 @@
+{
+  "name": "google-search-contacts-agent-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
