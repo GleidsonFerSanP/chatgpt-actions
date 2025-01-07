@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "node run index.js"
   },
   "author": "",
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "googleapis": "^144.0.0"
+    "dotenv": "^16.4.7",
+    "googleapis": "^144.0.0",
+    "openai": "^4.77.3"
   }
 }
