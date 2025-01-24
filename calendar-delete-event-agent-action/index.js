@@ -1,20 +1,12 @@
 import { google } from "googleapis";
+import AWS from "aws-sdk";
 
 // Utility function to validate required environment variables
 function validateEnvVariables() {
-  const {
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
-  } = process.env;
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    process.env;
 
-  if (
-    !GOOGLE_CLIENT_ID ||
-    !GOOGLE_CLIENT_SECRET ||
-    !GOOGLE_REDIRECT_URI ||
-    !REFRESH_TOKEN
-  ) {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
     throw new Error(
       "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, or REFRESH_TOKEN."
     );
@@ -24,32 +16,47 @@ function validateEnvVariables() {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
   };
 }
 
+async function getStoredToken() {
+  const ssm = new AWS.SSM();
+  console.log("start token retrive");
+  try {
+    const response = await ssm
+      .getParameter({
+        Name: "/oauth/google/access_token",
+        WithDecryption: true,
+      })
+      .promise();
+    console.log("token retrived successfuly");
+    return response.Parameter.Value;
+  } catch (error) {
+    console.error("Error retrieving token:", error);
+    return null;
+  }
+}
+
 // Function to initialize OAuth2 client
-function initializeOAuth2Client() {
-  const {
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
-  } = validateEnvVariables();
+async function initializeOAuth2Client() {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    validateEnvVariables();
 
   const oAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI
   );
-  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+  const refresh_token = await getStoredToken();
+
+  oAuth2Client.setCredentials({ refresh_token: refresh_token });
 
   return oAuth2Client;
 }
 
 async function deleteEvent(eventId) {
   const calendar = google.calendar("v3");
-  const oAuth2Client = initializeOAuth2Client();
+  const oAuth2Client = await initializeOAuth2Client();
 
   try {
     return await calendar.events.delete({

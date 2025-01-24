@@ -12,6 +12,7 @@
   "dependencies": {
     "axios": "^1.7.9",
     "googleapis": "^144.0.0",
-    "punycode": "^2.3.1"
+    "punycode": "^2.3.1",
+    "aws-sdk": "^2.1692.0"
   }
 }

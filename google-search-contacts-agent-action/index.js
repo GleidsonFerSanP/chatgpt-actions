@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import openai from "openai";
 import dotenv from "dotenv";
+import AWS from "aws-sdk";
 dotenv.config();
 
 // Create an OpenAI client using the default export
@@ -10,19 +11,10 @@ const openaiClient = new openai({
 
 // Utility function to validate required environment variables
 function validateEnvVariables() {
-  const {
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
-  } = process.env;
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    process.env;
 
-  if (
-    !GOOGLE_CLIENT_ID ||
-    !GOOGLE_CLIENT_SECRET ||
-    !GOOGLE_REDIRECT_URI ||
-    !REFRESH_TOKEN
-  ) {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
     throw new Error(
       "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, or REFRESH_TOKEN."
     );
@@ -32,32 +24,46 @@ function validateEnvVariables() {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
   };
 }
 
 // Function to initialize OAuth2 client
-function initializeOAuth2Client() {
-  const {
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
-    REFRESH_TOKEN,
-  } = validateEnvVariables();
+const initializeOAuth2Client = async () => {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    validateEnvVariables();
+
+  const refresh_token = await getStoredToken();
 
   const oAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI
   );
-  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+  oAuth2Client.setCredentials({ refresh_token: refresh_token });
 
   return oAuth2Client;
+};
+
+async function getStoredToken() {
+  const ssm = new AWS.SSM();
+  try {
+    const response = await ssm
+      .getParameter({
+        Name: "/oauth/google/access_token",
+        WithDecryption: true,
+      })
+      .promise();
+
+    return response.Parameter.Value;
+  } catch (error) {
+    console.error("Error retrieving token:", error);
+    return null;
+  }
 }
 
 async function fetchAllContacts() {
   const people = google.people("v1");
-  const oAuth2Client = initializeOAuth2Client();
+  const oAuth2Client = await initializeOAuth2Client();
 
   let contacts = [];
   let nextPageToken = null;

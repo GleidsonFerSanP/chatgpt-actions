@@ -1,35 +1,60 @@
 import { google } from "googleapis";
+import AWS from "aws-sdk";
+
+// Utility function to validate required environment variables
+function validateEnvVariables() {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    process.env;
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
+    throw new Error(
+      "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI."
+    );
+  }
+
+  return {
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI,
+  };
+}
+
+// Function to initialize OAuth2 client
+const initializeOAuth2Client = async () => {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
+    validateEnvVariables();
+
+  const refresh_token = await getStoredToken();
+
+  const oAuth2Client = new google.auth.OAuth2(
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI
+  );
+  oAuth2Client.setCredentials({ refresh_token: refresh_token });
+
+  return oAuth2Client;
+};
+
+async function getStoredToken() {
+  const ssm = new AWS.SSM();
+  try {
+    const response = await ssm
+      .getParameter({
+        Name: "/oauth/google/access_token",
+        WithDecryption: true,
+      })
+      .promise();
+
+    return response.Parameter.Value;
+  } catch (error) {
+    console.error("Error retrieving token:", error);
+    return null;
+  }
+}
 
 export const handler = async (event) => {
   try {
-    const { OAuth2 } = google.auth;
-
-    // Validate required environment variables
-    const {
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI,
-      REFRESH_TOKEN,
-    } = process.env;
-    if (
-      !GOOGLE_CLIENT_ID ||
-      !GOOGLE_CLIENT_SECRET ||
-      !GOOGLE_REDIRECT_URI ||
-      !REFRESH_TOKEN
-    ) {
-      throw new Error(
-        "Missing required environment variables for Google OAuth2."
-      );
-    }
-
-    // Initialize OAuth2 client
-    const oAuth2Client = new OAuth2(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI
-    );
-    oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-
     // Parse request body
     const requestBody = JSON.parse(event.body || "{}");
     const {
@@ -68,6 +93,7 @@ export const handler = async (event) => {
       attendees,
     };
 
+    const oAuth2Client = await initializeOAuth2Client();
     // Insert event into Google Calendar
     const calendar = google.calendar({ version: "v3", auth: oAuth2Client });
     const response = await calendar.events.insert({

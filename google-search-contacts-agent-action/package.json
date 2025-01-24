@@ -13,6 +13,7 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "googleapis": "^144.0.0",
-    "openai": "^4.77.3"
+    "openai": "^4.77.3",
+    "aws-sdk": "^2.1692.0"
   }
 }
