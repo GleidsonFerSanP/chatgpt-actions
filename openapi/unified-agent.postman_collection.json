@@ -1,0 +1,180 @@
+{
+    "info": {
+        "name": "Unified Agent API",
+        "_postman_id": "d39a13e7-8c61-4a0f-b3a9-92c369ea1234",
+        "description": "Coleção de testes da Unified Agent API.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Create Event",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"summary\": \"Team Meeting\",\n  \"description\": \"Discuss quarterly goals and progress.\",\n  \"location\": \"Conference Room A\",\n  \"attendees\": \"john.doe@example.com, jane.doe@example.com\",\n  \"startDateTime\": \"2024-12-30T10:00:00+00:00\",\n  \"endDateTime\": \"2024-12-30T11:00:00+00:00\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-create-event-agent-action",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "calendar-create-event-agent-action"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Delete Event",
+            "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-delete-event-agent-action?eventId=test-event-id",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "calendar-delete-event-agent-action"
+                    ],
+                    "query": [
+                        {
+                            "key": "eventId",
+                            "value": "test-event-id"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Search Events",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-search-events-agent-action?summary=Meeting&startDateTime=2024-12-30T00:00:00Z&endDateTime=2024-12-31T00:00:00Z",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "calendar-search-events-agent-action"
+                    ],
+                    "query": [
+                        {
+                            "key": "summary",
+                            "value": "Meeting"
+                        },
+                        {
+                            "key": "startDateTime",
+                            "value": "2024-12-30T00:00:00Z"
+                        },
+                        {
+                            "key": "endDateTime",
+                            "value": "2024-12-31T00:00:00Z"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Contacts",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/google-search-contacts-agent-action",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "google-search-contacts-agent-action"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Send Email",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"to\": \"recipient@example.com\",\n  \"subject\": \"Meeting Reminder\",\n  \"text\": \"This is a reminder for our meeting tomorrow.\",\n  \"html\": \"<p>This is a <strong>reminder</strong> for our meeting tomorrow.</p>\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/send-email-agent-action",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "send-email-agent-action"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Google Auth Callback",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/google-auth-callback?code=sample-code",
+                    "protocol": "https",
+                    "host": [
+                        "fa1xmc5uj9",
+                        "execute-api",
+                        "us-east-1",
+                        "amazonaws",
+                        "com"
+                    ],
+                    "path": [
+                        "google-auth-callback"
+                    ],
+                    "query": [
+                        {
+                            "key": "code",
+                            "value": "sample-code"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

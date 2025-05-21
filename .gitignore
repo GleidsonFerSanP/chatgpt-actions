@@ -1,3 +1,9 @@
 */node_modules/**
 calendar-delete-event-agent-action/README.md
 google-search-contacts-agent-action/.env
+terraform/terraform.tfvars
+**/terraform/.terraform/**
+**/lambda_function.zip
+calendar-search-events-agent-action/lambda_function.zip
+google-auth-callback/lambda_function.zip
+google-search-contacts-agent-action/lambda_function.zip

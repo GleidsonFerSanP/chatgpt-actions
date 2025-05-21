@@ -1,65 +1,74 @@
 import { google } from "googleapis";
 import openai from "openai";
-import dotenv from "dotenv";
 import AWS from "aws-sdk";
-dotenv.config();
+
+// Utilitários AWS
+const generateTraceId = () => `trace-${Date.now()}`;
+
+const logEnvironment = (traceId) => {
+  console.log(`[${traceId}] Environment:`, {
+    AWS_REGION: process.env.AWS_REGION,
+    STAGE: process.env.STAGE,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+};
+
+const getParameter = async (name, traceId) => {
+  const ssm = new AWS.SSM();
+  console.log(`[${traceId}] Fetching parameter ${name}`);
+  const response = await ssm
+    .getParameter({ Name: name, WithDecryption: true })
+    .promise();
+  return response.Parameter.Value;
+};
+
+async function getSecrets(secretId, traceId) {
+  const secretsManager = new AWS.SecretsManager();
+  console.log(`[${traceId}] Fetching secret ${secretId}`);
+  try {
+    const data = await secretsManager
+      .getSecretValue({ SecretId: secretId })
+      .promise();
+    if ("SecretString" in data) {
+      return data.SecretString;
+    }
+    const buff = Buffer.from(data.SecretBinary, "base64");
+    return buff.toString("ascii");
+  } catch (error) {
+    console.error(
+      `Failed to get secret ${secretId} from Secrets Manager`,
+      error
+    );
+    throw error;
+  }
+}
 
 // Create an OpenAI client using the default export
-const openaiClient = new openai({
-  apiKey: process.env.OPENAI_API_KEY, // Your API key from environment variables
-});
-
-// Utility function to validate required environment variables
-function validateEnvVariables() {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
-    process.env;
-
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
-    throw new Error(
-      "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, or REFRESH_TOKEN."
-    );
-  }
-
-  return {
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REDIRECT_URI,
-  };
-}
+let openaiClient;
 
 // Function to initialize OAuth2 client
 const initializeOAuth2Client = async () => {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
-    validateEnvVariables();
-
-  const refresh_token = await getStoredToken();
+  const traceId = generateTraceId(); // já deve estar disponível se vier da handler
+  const GOOGLE_CLIENT_ID = await getParameter(
+    "/oauth/google/client_id",
+    traceId
+  );
+  const GOOGLE_REDIRECT_URI = await getParameter(
+    "/oauth/google/redirect_uri",
+    traceId
+  );
+  const googleClientSecret = await getSecrets("google_client_secret", traceId);
+  const googleRefreshToken = await getSecrets("google_refresh_token", traceId);
 
   const oAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
+    googleClientSecret,
     GOOGLE_REDIRECT_URI
   );
-  oAuth2Client.setCredentials({ refresh_token: refresh_token });
+  oAuth2Client.setCredentials({ refresh_token: googleRefreshToken });
 
   return oAuth2Client;
 };
-
-async function getStoredToken() {
-  const ssm = new AWS.SSM();
-  try {
-    const response = await ssm
-      .getParameter({
-        Name: "/oauth/google/access_token",
-        WithDecryption: true,
-      })
-      .promise();
-
-    return response.Parameter.Value;
-  } catch (error) {
-    console.error("Error retrieving token:", error);
-    return null;
-  }
-}
 
 async function fetchAllContacts() {
   const people = google.people("v1");
@@ -190,6 +199,11 @@ function chunkData(data, chunkSize) {
 
 // Refine search with GPT
 async function refineSearchWithGPT(userQuery, contactChunk) {
+  const traceId = generateTraceId();
+  logEnvironment(traceId);
+
+  const openaiSecrets = await getSecrets("openai_api_key", traceId);
+  openaiClient = new openai({ apiKey: openaiSecrets.OPENAI_API_KEY });
   console.log("refineSearchWithGPTs", userQuery, contactChunk);
   const messages = [
     { role: "system", content: "You are a helpful assistant." },

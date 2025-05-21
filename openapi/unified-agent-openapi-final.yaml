@@ -1,0 +1,287 @@
+openapi: 3.1.0
+info:
+  title: Unified Agent API
+  description: Aggregated API for calendar, email, and contact agent actions.
+  version: 1.0.0
+servers:
+- url: https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com
+paths:
+  /calendar-create-event-agent-action:
+    post:
+      operationId: createGoogleCalendarEvent
+      summary: Create an event
+      description: Endpoint to create an event with specific attributes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                summary:
+                  type: string
+                  description: A brief summary of the event.
+                  example: Team Meeting
+                description:
+                  type: string
+                  description: A detailed description of the event.
+                  example: Discuss quarterly goals and progress.
+                location:
+                  type: string
+                  description: The location of the event.
+                  example: Conference Room A
+                attendees:
+                  type: string
+                  description: A comma-separated list of attendees' emails.
+                  example: john.doe@example.com, jane.doe@example.com
+                startDateTime:
+                  type: string
+                  format: date-time
+                  description: The start date and time of the event in ISO 8601 format.
+                  example: '2024-12-30T10:00:00+00:00'
+                endDateTime:
+                  type: string
+                  format: date-time
+                  description: The end date and time of the event in ISO 8601 format.
+                  example: '2024-12-30T11:00:00+00:00'
+      responses:
+        '201':
+          description: Event created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The unique identifier of the created event.
+                    example: 12345
+  /calendar-delete-event-agent-action:
+    delete:
+      operationId: deleteGoogleCalendarEvent
+      summary: Delete a Google Calendar Event
+      description: Deletes a Google Calendar event using its unique ID.
+      parameters:
+      - in: query
+        name: eventId
+        required: true
+        schema:
+          type: string
+        description: The unique identifier of the Google Calendar event to delete.
+      responses:
+        '200':
+          description: Event deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Event with ID your-event-id has been deleted.
+        '400':
+          description: Bad Request - Missing or invalid eventId parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing required parameter eventId
+        '500':
+          description: Internal Server Error - Failed to delete the event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to delete the event.
+                  details:
+                    type: string
+                    example: Event not found or API error.
+  /calendar-search-events-agent-action:
+    get:
+      operationId: searchGoogleCalendarEvent
+      summary: Search Google Calendar Events
+      description: Search for events in Google Calendar by summary, startDateTime,
+        and endDateTime.
+      parameters:
+      - in: query
+        name: summary
+        schema:
+          type: string
+        required: true
+        description: The keyword to search for in event summaries.
+      - in: query
+        name: startDateTime
+        schema:
+          type: string
+          format: date-time
+        required: true
+        description: The start of the time range to search (ISO 8601 format).
+      - in: query
+        name: endDateTime
+        schema:
+          type: string
+          format: date-time
+        required: true
+        description: The end of the time range to search (ISO 8601 format).
+      responses:
+        '200':
+          description: A list of matching events.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The ID of the event.
+                        summary:
+                          type: string
+                          description: The summary or title of the event.
+                        start:
+                          type: string
+                          format: date-time
+                          description: The start time of the event.
+                        end:
+                          type: string
+                          format: date-time
+                          description: The end time of the event.
+        '400':
+          description: Invalid request (e.g., missing parameters or invalid format).
+        '500':
+          description: Server error or Google Calendar API error.
+  /google-search-contacts-agent-action:
+    get:
+      operationId: getGoogleContacts
+      summary: Fetch all Google Contacts
+      description: Retrieve all contacts from the authenticated Google account, including
+        names, email addresses, and phone numbers.
+      responses:
+        '200':
+          description: A list of contacts retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: The display name of the contact.
+                          example: John Doe
+                        email:
+                          type: string
+                          description: The primary email address of the contact.
+                          example: john.doe@example.com
+                        phone:
+                          type: string
+                          description: The primary phone number of the contact.
+                          example: '+1234567890'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to fetch contacts due to an API error.
+  /send-email-agent-action:
+    post:
+      operationId: sendEmail
+      summary: Send an email
+      description: Endpoint to send an email with specified attributes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  description: The recipient's email address.
+                  example: recipient@example.com
+                subject:
+                  type: string
+                  description: The subject of the email.
+                  example: Meeting Reminder
+                text:
+                  type: string
+                  description: The plain text content of the email.
+                  example: This is a reminder for our meeting tomorrow.
+                html:
+                  type: string
+                  description: The HTML content of the email.
+                  example: <p>This is a <strong>reminder</strong> for our meeting
+                    tomorrow.</p>
+      responses:
+        '200':
+          description: Email sent successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message.
+                    example: Email has been sent successfully.
+  /google-auth-callback:
+    get:
+      operationId: googleAuthCallback
+      summary: Google OAuth Callback
+      description: Receives the authorization code from Google's OAuth2 flow.
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: The authorization code returned by Google after user consent.
+      responses:
+        '200':
+          description: Authorization code received successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Authorization code received.
+        '400':
+          description: Bad request (e.g., missing or invalid code).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing or invalid authorization code.
+        '500':
+          description: Internal server error during auth callback processing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to process the authorization code.
