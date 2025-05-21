@@ -1,23 +1,56 @@
 // File: index.js
 import nodemailer from "nodemailer";
+import AWS from "aws-sdk";
+
+// Utilitários AWS
+const generateTraceId = () => `trace-${Date.now()}`;
+
+const logEnvironment = (traceId) => {
+  console.log(`[${traceId}] Environment:`, {
+    AWS_REGION: process.env.AWS_REGION,
+    STAGE: process.env.STAGE,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+};
+
+async function getSecrets(secretId, traceId) {
+  const secretsManager = new AWS.SecretsManager();
+  console.log(`[${traceId}] Fetching secret ${secretId}`);
+  try {
+    const data = await secretsManager
+      .getSecretValue({ SecretId: secretId })
+      .promise();
+    if ("SecretString" in data) {
+      return data.SecretString;
+    }
+    const buff = Buffer.from(data.SecretBinary, "base64");
+    return buff.toString("ascii");
+  } catch (error) {
+    console.error(
+      `Failed to get secret ${secretId} from Secrets Manager`,
+      error
+    );
+    throw error;
+  }
+}
 
 export const handler = async (event) => {
   try {
-    // Set Gmail credentials from environment variables
-    const { GMAIL_USER, GMAIL_PASS } = process.env;
+    const traceId = generateTraceId();
+    logEnvironment(traceId); // já deve estar disponível se vier da handler
 
-    if (!GMAIL_USER || !GMAIL_PASS) {
-      throw new Error(
-        "GMAIL_USER and GMAIL_PASS environment variables are required."
-      );
-    }
+    const googleSmtpUser = await getSecrets("google_smtp_user", traceId);
+    const googleSmtpPassword = await getSecrets(
+      "google_smtp_password",
+      traceId
+    );
 
     // Nodemailer configuration for Gmail
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_PASS,
+        user: googleSmtpUser,
+        pass: googleSmtpPassword,
       },
     });
 
@@ -30,7 +63,7 @@ export const handler = async (event) => {
 
     // Email options
     const mailOptions = {
-      from: GMAIL_USER,
+      from: googleSmtpUser,
       to: to,
       subject: subject,
       text: text,

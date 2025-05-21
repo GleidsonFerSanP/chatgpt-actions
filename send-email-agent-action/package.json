@@ -10,6 +10,7 @@
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "aws-sdk": "^2.1692.0"
   }
 }

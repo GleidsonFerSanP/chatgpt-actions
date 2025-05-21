@@ -37,3 +37,13 @@ variable "openai_api_key" {
   type        = string
   sensitive   = true
 }
+variable "google_smtp_user" {
+  description = "google_smtp_user"
+  type        = string
+  sensitive   = true
+}
+variable "google_smtp_password" {
+  description = "google_smtp_user"
+  type        = string
+  sensitive   = true
+}

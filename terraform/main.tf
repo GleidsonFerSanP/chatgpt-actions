@@ -47,3 +47,22 @@ resource "aws_secretsmanager_secret_version" "google_refresh_token_version" {
   secret_id     = aws_secretsmanager_secret.google_refresh_token.id
   secret_string = var.google_refresh_token
 }
+
+resource "aws_secretsmanager_secret" "google_smtp_user" {
+  name        = "google_smtp_user"
+  description = "Google Gmail Service user"
+}
+
+resource "aws_secretsmanager_secret_version" "google_smtp_user_version" {
+  secret_id     = aws_secretsmanager_secret.google_smtp_user.id
+  secret_string = var.google_smtp_user
+}
+resource "aws_secretsmanager_secret" "google_smtp_password" {
+  name        = "google_smtp_password"
+  description = "Google Gmail Service user"
+}
+
+resource "aws_secretsmanager_secret_version" "google_smtp_password_version" {
+  secret_id     = aws_secretsmanager_secret.google_smtp_password.id
+  secret_string = var.google_smtp_password
+}

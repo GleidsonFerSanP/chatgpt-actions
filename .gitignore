@@ -7,3 +7,7 @@ terraform/terraform.tfvars
 calendar-search-events-agent-action/lambda_function.zip
 google-auth-callback/lambda_function.zip
 google-search-contacts-agent-action/lambda_function.zip
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+
+.env
