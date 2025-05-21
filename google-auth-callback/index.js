@@ -40,29 +40,6 @@ async function getSecretValue(secretName) {
   }
 }
 
-// async function getEnvVariablesFromSSM() {
-//   const names = [
-//     "/oauth/google/client_id",
-//     "/oauth/google/client_secret",
-//     "/oauth/google/redirect_uri",
-//     "/oauth/google/refresh_token",
-//   ];
-
-//   const [
-//     GOOGLE_CLIENT_ID,
-//     GOOGLE_CLIENT_SECRET,
-//     GOOGLE_REDIRECT_URI,
-//     REFRESH_TOKEN,
-//   ] = await Promise.all(names.map(getEnvVariable));
-
-//   return {
-//     GOOGLE_CLIENT_ID,
-//     GOOGLE_CLIENT_SECRET,
-//     GOOGLE_REDIRECT_URI,
-//     REFRESH_TOKEN,
-//   };
-// }
-
 async function getAccessToken(
   code,
   GOOGLE_CLIENT_ID,

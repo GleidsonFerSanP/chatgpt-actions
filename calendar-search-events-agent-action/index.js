@@ -1,94 +1,92 @@
 import { google } from "googleapis";
 import AWS from "aws-sdk";
 
-// Utility function to validate required environment variables
-function validateEnvVariables() {
-  console.log("Validating required environment variables...");
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
-    process.env;
+const generateTraceId = () => `trace-${Date.now()}`;
 
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REDIRECT_URI) {
-    console.error(
-      "Validation failed: Missing required environment variables.",
-      {
-        GOOGLE_CLIENT_ID: !!GOOGLE_CLIENT_ID,
-        GOOGLE_CLIENT_SECRET: !!GOOGLE_CLIENT_SECRET,
-        GOOGLE_REDIRECT_URI: !!GOOGLE_REDIRECT_URI,
-      }
-    );
-    throw new Error(
-      "Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI."
-    );
-  }
+const logEnvironment = (traceId) => {
+  console.log(`[${traceId}] Environment:`, {
+    AWS_REGION: process.env.AWS_REGION,
+    STAGE: process.env.STAGE,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+};
 
-  console.log("Environment variables validated successfully.");
-  return { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI };
-}
-
-async function getStoredToken() {
+const getParameter = async (name, traceId) => {
   const ssm = new AWS.SSM();
-  console.log("Attempting to retrieve stored token from AWS SSM...");
-
+  console.log(`[${traceId}] Fetching parameter: ${name}`);
   try {
     const response = await ssm
-      .getParameter({
-        Name: "/oauth/google/access_token",
-        WithDecryption: true,
-      })
+      .getParameter({ Name: name, WithDecryption: true })
       .promise();
-
-    console.log("Token retrieved successfully.", {
-      tokenLength: response.Parameter.Value.length,
-    });
+    console.log(`[${traceId}] Retrieved parameter: ${name}`);
     return response.Parameter.Value;
   } catch (error) {
-    console.error("Error retrieving token from AWS SSM:", {
-      message: error.message,
-      stack: error.stack,
-    });
-    return null;
+    console.error(`[${traceId}] Failed to fetch parameter ${name}:`, error);
+    throw error;
   }
-}
+};
+
+const getSecrets = async (secretId, traceId) => {
+  const secretsManager = new AWS.SecretsManager();
+  console.log(`[${traceId}] Fetching secret: ${secretId}`);
+  try {
+    const data = await secretsManager
+      .getSecretValue({ SecretId: secretId })
+      .promise();
+    console.log(`[${traceId}] Secret fetched: ${secretId}`);
+    if ("SecretString" in data) {
+      return data.SecretString;
+    }
+    const buff = Buffer.from(data.SecretBinary, "base64");
+    return buff.toString("ascii");
+  } catch (error) {
+    console.error(`[${traceId}] Failed to get secret ${secretId}:`, error);
+    throw error;
+  }
+};
 
 // Function to initialize OAuth2 client
-async function initializeOAuth2Client() {
-  console.log("Initializing OAuth2 client...");
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } =
-    validateEnvVariables();
+const initializeOAuth2Client = async (traceId) => {
+  console.log(`[${traceId}] Initializing OAuth2 client...`);
+
+  const GOOGLE_CLIENT_ID = await getParameter(
+    "/oauth/google/client_id",
+    traceId
+  );
+  const GOOGLE_REDIRECT_URI = await getParameter(
+    "/oauth/google/redirect_uri",
+    traceId
+  );
+  const clientSecret = await getSecrets("google_client_secret", traceId);
+  const refreshToken = await getSecrets("google_refresh_token", traceId);
 
   const oAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
+    clientSecret,
     GOOGLE_REDIRECT_URI
   );
 
-  const refresh_token = await getStoredToken();
-  if (!refresh_token) {
-    console.error(
-      "Failed to retrieve refresh token. OAuth2 client initialization aborted."
-    );
-    throw new Error("Missing refresh token.");
-  }
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
 
-  oAuth2Client.setCredentials({ refresh_token });
-  console.log("OAuth2 client initialized successfully.");
+  console.log(`[${traceId}] OAuth2 client initialized.`);
   return oAuth2Client;
-}
+};
 
-// Function to search for events by summary
+// 🟢 Adicionado parâmetro traceId em searchEvents e searchEventsBySummary
 async function searchEventsBySummary(
   summaryKeyword,
-  timeMin = new Date().toISOString(),
-  timeMax = null
+  timeMin,
+  timeMax,
+  traceId
 ) {
-  console.log("Searching for events by summary...", {
+  console.log(`[${traceId}] Searching for events by summary...`, {
     summaryKeyword,
     timeMin,
     timeMax,
   });
 
   const calendar = google.calendar("v3");
-  const oAuth2Client = await initializeOAuth2Client();
+  const oAuth2Client = await initializeOAuth2Client(traceId);
 
   try {
     const res = await calendar.events.list({
@@ -102,10 +100,12 @@ async function searchEventsBySummary(
     });
 
     const events = res.data.items || [];
-    console.log("Search completed.", { eventCount: events.length, events });
+    console.log(`[${traceId}] Search completed.`, {
+      eventCount: events.length,
+    });
     return events;
   } catch (err) {
-    console.error("Error searching events by summary:", {
+    console.error(`[${traceId}] Error searching events by summary:`, {
       message: err.message,
       stack: err.stack,
     });
@@ -113,7 +113,6 @@ async function searchEventsBySummary(
   }
 }
 
-// Function to search for all events
 async function searchEvents(
   timeMin = new Date().toISOString(),
   timeMax = null
@@ -145,70 +144,83 @@ async function searchEvents(
   }
 }
 
-// Lambda handler function
 export const handler = async (event) => {
-  console.log("Lambda function invoked.", {
-    event: JSON.stringify(event, null, 2),
-  });
+  const traceId = generateTraceId();
+  console.log(`[${traceId}] Lambda handler invoked.`);
+
+  logEnvironment(traceId);
+  console.log(`[${traceId}] Event received:`, JSON.stringify(event, null, 2));
 
   try {
-    // Parse query parameters
     const queryParams = event.queryStringParameters;
     if (!queryParams) {
-      console.error("No query parameters provided in the request.");
+      console.warn(`[${traceId}] No query parameters provided.`);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "No query parameters provided" }),
+        body: JSON.stringify({
+          error: "No query parameters provided",
+          traceId,
+        }),
       };
     }
 
-    const summary = queryParams.summary || null;
-    const startDateTime = queryParams.startDateTime || null;
-    const endDateTime = queryParams.endDateTime || null;
+    const {
+      summary = null,
+      startDateTime = null,
+      endDateTime = null,
+    } = queryParams;
 
     if (!startDateTime || !endDateTime) {
-      console.error("Missing required fields: startDateTime or endDateTime.", {
-        queryParams,
-      });
+      console.warn(
+        `[${traceId}] Missing required parameters: startDateTime or endDateTime.`
+      );
       return {
         statusCode: 400,
         body: JSON.stringify({
           message:
             "Missing required fields: summary, startDateTime, or endDateTime.",
+          traceId,
         }),
       };
     }
 
-    console.log("Searching for events with parameters...", {
+    console.log(`[${traceId}] Searching events with:`, {
       summary,
       startDateTime,
       endDateTime,
     });
 
     const events = summary
-      ? await searchEventsBySummary(summary, startDateTime, endDateTime)
-      : await searchEvents(startDateTime, endDateTime);
+      ? await searchEventsBySummary(
+          summary,
+          startDateTime,
+          endDateTime,
+          traceId
+        )
+      : await searchEvents(startDateTime, endDateTime, traceId);
 
-    console.log("Events retrieved successfully.", {
-      eventCount: events.length,
-    });
+    console.log(`[${traceId}] Events retrieved.`, { count: events.length });
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         message: "Events retrieved successfully.",
         events,
+        traceId,
       }),
     };
   } catch (error) {
-    console.error("Error handling request:", {
+    console.error(`[${traceId}] Error handling request:`, {
       message: error.message,
       stack: error.stack,
     });
+
     return {
       statusCode: error.statusCode || 500,
       body: JSON.stringify({
         message: "An error occurred while processing your request.",
         error: error.message,
+        traceId,
       }),
     };
   }

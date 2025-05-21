@@ -56,6 +56,12 @@ data "aws_apigatewayv2_api" "target" {
   api_id = var.apigateway_id
 }
 
+# Attach the custom policy to the Lambda role
+resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
+  role       = data.aws_iam_role.lambda_role.name
+  policy_arn = data.aws_iam_policy.lambda_access_params_secrets.arn
+}
+
 # Define the Lambda function
 resource "aws_lambda_function" "function_lambda" {
   function_name = var.function_name
