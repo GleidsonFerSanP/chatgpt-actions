@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "Unified API for Calendar and Contacts",
+    "description": "Postman collection for managing Google Calendar events, contacts, and sending emails via AWS Lambda Gateway",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Google Calendar Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-create-event-agent-action",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "calendar-create-event-agent-action"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"summary\": \"Team Meeting\",\n  \"description\": \"Discuss quarterly goals and progress.\",\n  \"location\": \"Conference Room A\",\n  \"attendees\": \"john.doe@example.com, jane.doe@example.com\",\n  \"startDateTime\": \"2024-12-30T10:00:00Z\",\n  \"endDateTime\": \"2024-12-30T11:00:00Z\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Delete Google Calendar Event",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-delete-event-agent-action?eventId={{eventId}}",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "calendar-delete-event-agent-action"
+          ],
+          "query": [
+            {
+              "key": "eventId",
+              "value": "{{eventId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Search Google Calendar Events",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/calendar-search-events-agent-action?summary={{summary}}&startDateTime={{startDateTime}}&endDateTime={{endDateTime}}",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "calendar-search-events-agent-action"
+          ],
+          "query": [
+            {
+              "key": "summary",
+              "value": "{{summary}}"
+            },
+            {
+              "key": "startDateTime",
+              "value": "{{startDateTime}}"
+            },
+            {
+              "key": "endDateTime",
+              "value": "{{endDateTime}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Google Contact",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/google-create-contacts-agent-action",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "google-create-contacts-agent-action"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"contact\": {\n    \"names\": [\n      {\n        \"givenName\": \"John\",\n        \"familyName\": \"Doe\"\n      }\n    ],\n    \"emailAddresses\": [\n      {\n        \"value\": \"john.doe@example.com\"\n      }\n    ],\n    \"phoneNumbers\": [\n      {\n        \"value\": \"+1234567890\"\n      }\n    ],\n    \"addresses\": [\n      {\n        \"streetAddress\": \"123 Main St\",\n        \"city\": \"Anytown\",\n        \"region\": \"State\",\n        \"postalCode\": \"12345\",\n        \"country\": \"USA\"\n      }\n    ]\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Search Google Contacts",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/google-search-contacts-agent-action?query={{query}}",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "google-search-contacts-agent-action"
+          ],
+          "query": [
+            {
+              "key": "query",
+              "value": "{{query}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Send Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com/send-email-agent-action",
+          "protocol": "https",
+          "host": [
+            "fa1xmc5uj9",
+            "execute-api",
+            "us-east-1",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            "send-email-agent-action"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"recipient@example.com\",\n  \"subject\": \"Meeting Reminder\",\n  \"text\": \"This is a reminder for our meeting tomorrow.\",\n  \"html\": \"<p>This is a <strong>reminder</strong> for our meeting tomorrow.</p>\"\n}"
+        }
+      }
+    }
+  ]
+}

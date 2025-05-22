@@ -11,3 +11,4 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 
 .env
+calendar-create-event-agent-action/lambda_function.zip

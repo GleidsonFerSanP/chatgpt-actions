@@ -1,42 +1,48 @@
 import { google } from "googleapis";
 import AWS from "aws-sdk";
 
-// Gera um identificador simples de rastreamento
 const generateTraceId = () => `trace-${Date.now()}`;
 
-// Mostra o ambiente para fins de debug
-function logEnvironment(traceId) {
-  console.log(`[${traceId}] Environment Info:`, {
+const logEnvironment = (traceId) => {
+  console.log(`[${traceId}] Environment:`, {
     AWS_REGION: process.env.AWS_REGION,
+    STAGE: process.env.STAGE,
     NODE_ENV: process.env.NODE_ENV,
-    EXECUTION_ENV: process.env.AWS_EXECUTION_ENV,
-    STAGE: process.env.STAGE || "dev",
   });
-}
+};
 
-// Função para buscar valores do Parameter Store
-async function getParameter(name, traceId) {
-  console.log(`[${traceId}] Fetching SSM parameter: ${name}`);
+const getParameter = async (name, traceId) => {
   const ssm = new AWS.SSM();
-  const result = await ssm
-    .getParameter({ Name: name, WithDecryption: true })
-    .promise();
-  console.log(`[${traceId}] Retrieved parameter: ${name}`);
-  return result.Parameter.Value;
-}
+  console.log(`[${traceId}] Fetching parameter: ${name}`);
+  try {
+    const response = await ssm
+      .getParameter({ Name: name, WithDecryption: true })
+      .promise();
+    console.log(`[${traceId}] Retrieved parameter: ${name}`);
+    return response.Parameter.Value;
+  } catch (error) {
+    console.error(`[${traceId}] Failed to fetch parameter ${name}:`, error);
+    throw error;
+  }
+};
 
-// Função para buscar segredos do Secrets Manager
-async function getSecretValue(secretId, traceId) {
-  console.log(`[${traceId}] Fetching secret: ${secretId}`);
+const getSecrets = async (secretId, traceId) => {
   const secretsManager = new AWS.SecretsManager();
-  const result = await secretsManager
-    .getSecretValue({ SecretId: secretId })
-    .promise();
-  console.log(`[${traceId}] Secret retrieved: ${secretId}`);
-  return JSON.parse(result.SecretString);
-}
+  console.log(`[${traceId}] Fetching secret: ${secretId}`);
+  try {
+    const data = await secretsManager
+      .getSecretValue({ SecretId: secretId })
+      .promise();
+    console.log(`[${traceId}] Secret fetched: ${secretId}`);
+    return "SecretString" in data
+      ? data.SecretString
+      : Buffer.from(data.SecretBinary, "base64").toString("ascii");
+  } catch (error) {
+    console.error(`[${traceId}] Failed to get secret ${secretId}:`, error);
+    throw error;
+  }
+};
 
-// Inicializa cliente OAuth2 com valores do SSM e Secrets Manager
 const initializeOAuth2Client = async (traceId) => {
   console.log(`[${traceId}] Initializing OAuth2 client...`);
 
@@ -48,19 +54,18 @@ const initializeOAuth2Client = async (traceId) => {
     "/oauth/google/redirect_uri",
     traceId
   );
-
-  const secrets = await getSecretValue("google_client_secret", traceId);
-  const GOOGLE_CLIENT_SECRET = secrets.GOOGLE_CLIENT_SECRET;
-  const refresh_token = secrets.REFRESH_TOKEN;
+  const clientSecret = await getSecrets("google_client_secret", traceId);
+  const refreshToken = await getSecrets("google_refresh_token", traceId);
 
   const oAuth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
+    clientSecret,
     GOOGLE_REDIRECT_URI
   );
-  oAuth2Client.setCredentials({ refresh_token });
 
-  console.log(`[${traceId}] OAuth2 client initialized successfully.`);
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
+
+  console.log(`[${traceId}] OAuth2 client initialized.`);
   return oAuth2Client;
 };
 
