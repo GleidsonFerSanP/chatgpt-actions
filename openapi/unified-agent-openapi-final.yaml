@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Unified API for Calendar and Contacts Management
-  description: Combined OpenAPI schema for managing Google Calendar events, contacts, and sending emails.
-  version: 1.0.0
+  title: Unified API for Calendar, Contacts, Email and File Management
+  description: Combined OpenAPI schema for managing Google Calendar events, contacts, sending emails, and uploading files to S3.
+  version: 1.0.1
 servers:
   - url: https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com
     description: API Gateway endpoint for Lambda
@@ -313,3 +313,192 @@ paths:
                     type: string
                     description: Confirmation message.
                     example: Email has been sent successfully.
+  /file-upload-agent-action:
+    options:
+      operationId: uploadFileToS3Options
+      summary: CORS preflight for file upload endpoint
+      description: Handle CORS preflight requests for file upload.
+      responses:
+        "200":
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: "GET,POST,PUT,DELETE,OPTIONS"
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: CORS preflight response
+    post:
+      operationId: uploadFileToS3
+      summary: Upload file to S3 and serve as static content
+      description: Endpoint to upload files to S3 bucket and serve them as static website content. HTML files are saved as index.html for website hosting.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  description: The name of the file to upload (optional - will be auto-generated if not provided).
+                  example: my-website.html
+                fileContent:
+                  type: string
+                  description: The file content encoded in base64 or as plain text.
+                  example: PGh0bWw+PGhlYWQ+PHRpdGxlPk15IFNpdGU8L3RpdGxlPjwvaGVhZD48Ym9keT48aDE+SGVsbG8gV29ybGQhPC9oMT48L2JvZHk+PC9odG1sPg==
+                content:
+                  type: string
+                  description: Alternative to fileContent - accepts plain text content.
+                  example: "Hello World! This is my text file content."
+                html:
+                  type: string
+                  description: Direct HTML content (automatically sets fileName to index.html if not provided).
+                  example: "<html><head><title>My Site</title></head><body><h1>Hello World!</h1></body></html>"
+                contentType:
+                  type: string
+                  description: MIME type of the file (optional - auto-detected from extension).
+                  example: text/html
+              required:
+                - fileContent
+              anyOf:
+                - required: [fileContent]
+                - required: [content] 
+                - required: [html]
+      responses:
+        "200":
+          description: File uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message.
+                    example: File uploaded successfully
+                  data:
+                    type: object
+                    description: Detailed information about the uploaded file.
+                    properties:
+                      originalFileName:
+                        type: string
+                        description: The original name of the uploaded file.
+                        example: my-website.html
+                      finalFileName:
+                        type: string
+                        description: The final name used to save the file.
+                        example: index.html
+                      s3Key:
+                        type: string
+                        description: The key used to store the file in S3.
+                        example: index.html
+                      publicUrl:
+                        type: string
+                        description: Public URL to access the file directly from S3.
+                        example: https://chatgpt-actions-file-uploads.s3.amazonaws.com/index.html
+                      s3Url:
+                        type: string
+                        description: S3 protocol URL for the file.
+                        example: s3://chatgpt-actions-file-uploads/index.html
+                      websiteUrl:
+                        type: string
+                        description: Website URL to access the file through S3 static hosting.
+                        example: http://chatgpt-actions-file-uploads.s3-website-us-east-1.amazonaws.com/index.html
+                      contentType:
+                        type: string
+                        description: MIME type of the uploaded file.
+                        example: text/html
+                      size:
+                        type: integer
+                        description: Size of the file in bytes.
+                        example: 1024
+                      uploadedAt:
+                        type: string
+                        format: date-time
+                        description: Timestamp when the file was uploaded.
+                        example: 2024-11-08T12:30:00.000Z
+                      traceId:
+                        type: string
+                        description: Unique trace ID for debugging purposes.
+                        example: trace-1699454400000
+                      isWebsiteFile:
+                        type: boolean
+                        description: Whether the file is treated as a website index file.
+                        example: true
+                      isBase64Input:
+                        type: boolean
+                        description: Whether the input was provided as base64 or plain text.
+                        example: false
+                      quickAccess:
+                        type: object
+                        description: Quick access URLs with descriptive labels.
+                        properties:
+                          "📄 View File":
+                            type: string
+                            example: https://chatgpt-actions-file-uploads.s3.amazonaws.com/index.html
+                          "🌐 Website":
+                            type: string
+                            example: http://chatgpt-actions-file-uploads.s3-website-us-east-1.amazonaws.com/index.html
+                          "💾 Download":
+                            type: string
+                            example: https://chatgpt-actions-file-uploads.s3.amazonaws.com/index.html
+        "400":
+          description: Bad Request - Missing required parameters or invalid content.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing required fields
+                  message:
+                    type: string
+                    example: fileContent, content, or html is required
+                  examples:
+                    type: object
+                    description: Usage examples for different input types
+                    properties:
+                      "HTML direct":
+                        type: object
+                        example: {"html": "<html>...</html>", "fileName": "my-page.html"}
+                      "Base64 file":
+                        type: object  
+                        example: {"fileName": "doc.pdf", "fileContent": "base64string"}
+                      "Text content":
+                        type: object
+                        example: {"fileName": "notes.txt", "content": "My notes"}
+        "500":
+          description: Internal Server Error - Failed to upload file.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error type.
+                    example: Internal server error
+                  message:
+                    type: string
+                    description: Error message.
+                    example: Failed to upload file to S3
+                  details:
+                    type: string
+                    description: Detailed error information.
+                    example: Access denied

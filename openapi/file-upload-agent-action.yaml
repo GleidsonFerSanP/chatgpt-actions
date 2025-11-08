@@ -1,0 +1,120 @@
+openapi: 3.1.0
+info:
+  title: File Upload Agent Action API
+  description: API for uploading files to S3 and serving them as static website content
+  version: 1.0.0
+servers:
+  - url: https://fa1xmc5uj9.execute-api.us-east-1.amazonaws.com
+    description: API Gateway endpoint for Lambda
+paths:
+  /file-upload-agent-action:
+    post:
+      operationId: uploadFileToS3
+      summary: Upload file to S3 and serve as static content
+      description: |
+        Endpoint to upload files to S3 bucket and serve them as static website content. 
+        HTML files are automatically saved as index.html for website hosting.
+        Other files maintain their original names.
+        Perfect for personal website hosting where each HTML upload replaces the previous one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  description: The name of the file to upload (including extension).
+                  example: my-website.html
+                fileContent:
+                  type: string
+                  description: The file content encoded in base64.
+                  example: PGh0bWw+PGhlYWQ+PHRpdGxlPk15IFNpdGU8L3RpdGxlPjwvaGVhZD48Ym9keT48aDE+SGVsbG8gV29ybGQhPC9oMT48L2JvZHk+PC9odG1sPg==
+              required:
+                - fileName
+                - fileContent
+      responses:
+        "200":
+          description: File uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message.
+                    example: File uploaded successfully
+                  websiteUrl:
+                    type: string
+                    description: The website URL to access the uploaded content.
+                    example: http://chatgpt-actions-file-uploads.s3-website-us-east-1.amazonaws.com/
+                  s3Url:
+                    type: string
+                    description: Direct S3 URL to the uploaded file.
+                    example: https://chatgpt-actions-file-uploads.s3.amazonaws.com/index.html
+                  fileName:
+                    type: string
+                    description: The final name of the file in S3.
+                    example: index.html
+        "400":
+          description: Bad Request - Missing required parameters.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Missing required parameter fileName or fileContent
+        "500":
+          description: Internal Server Error - Failed to upload file.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to upload file to S3
+
+components:
+  schemas:
+    FileUploadRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+          description: Name of the file with extension
+          example: website.html
+        fileContent:
+          type: string
+          format: byte
+          description: Base64 encoded file content
+      required:
+        - fileName
+        - fileContent
+    
+    FileUploadResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: File uploaded successfully
+        websiteUrl:
+          type: string
+          example: http://chatgpt-actions-file-uploads.s3-website-us-east-1.amazonaws.com/
+        s3Url:
+          type: string
+          example: https://chatgpt-actions-file-uploads.s3.amazonaws.com/index.html
+        fileName:
+          type: string
+          example: index.html
+    
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error message description

@@ -1,0 +1,156 @@
+openapi: 3.1.0
+info:
+  title: File Upload Agent Action
+  description: OpenAPI schema for uploading files to S3 and serving as static content.
+  version: 1.0.0
+servers:
+  - url: https://your-api-gateway-url.execute-api.us-east-1.amazonaws.com/default
+    description: API Gateway endpoint for Lambda (to be updated after deployment)
+paths:
+  /file-upload-agent-action:
+    post:
+      operationId: uploadFile
+      summary: Upload a file to S3
+      description: Upload a file to AWS S3 bucket and make it available as static content via public URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  description: The name of the file to be uploaded (with extension).
+                  example: "document.pdf"
+                fileContent:
+                  type: string
+                  description: The file content encoded in base64.
+                  example: "JVBERi0xLjQKJcfsj6IKNSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo..."
+                contentType:
+                  type: string
+                  description: MIME type of the file (optional - will be auto-detected if not provided).
+                  example: "application/pdf"
+              required:
+                - fileName
+                - fileContent
+              additionalProperties: false
+      responses:
+        '200':
+          description: File uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message.
+                    example: "File uploaded successfully"
+                  data:
+                    type: object
+                    properties:
+                      fileName:
+                        type: string
+                        description: Original file name.
+                        example: "document.pdf"
+                      uniqueFileName:
+                        type: string
+                        description: Unique file name generated for S3.
+                        example: "123e4567-e89b-12d3-a456-426614174000.pdf"
+                      s3Key:
+                        type: string
+                        description: S3 object key.
+                        example: "uploads/123e4567-e89b-12d3-a456-426614174000.pdf"
+                      publicUrl:
+                        type: string
+                        description: Public URL to access the uploaded file.
+                        example: "https://your-bucket.s3.amazonaws.com/uploads/123e4567-e89b-12d3-a456-426614174000.pdf"
+                      s3Url:
+                        type: string
+                        description: S3 URL format.
+                        example: "s3://your-bucket/uploads/123e4567-e89b-12d3-a456-426614174000.pdf"
+                      contentType:
+                        type: string
+                        description: MIME type of the uploaded file.
+                        example: "application/pdf"
+                      size:
+                        type: integer
+                        description: File size in bytes.
+                        example: 1048576
+                      uploadedAt:
+                        type: string
+                        format: date-time
+                        description: Upload timestamp.
+                        example: "2024-01-15T10:30:00.000Z"
+                      traceId:
+                        type: string
+                        description: Trace ID for debugging.
+                        example: "trace-1642248600000"
+        '400':
+          description: Bad request - invalid input.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missing required fields"
+                  message:
+                    type: string
+                    example: "fileName and fileContent are required"
+                  requiredFields:
+                    type: array
+                    items:
+                      type: string
+                    example: ["fileName", "fileContent"]
+                  optionalFields:
+                    type: array
+                    items:
+                      type: string
+                    example: ["contentType"]
+        '405':
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Method not allowed"
+                  message:
+                    type: string
+                    example: "Only POST method is supported"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+                  message:
+                    type: string
+                    example: "Failed to upload file to S3"
+                  details:
+                    type: string
+                    example: "Error details message"
+    options:
+      operationId: corsPreflightUpload
+      summary: CORS preflight for file upload
+      description: Handle CORS preflight requests for file upload endpoint.
+      responses:
+        '200':
+          description: CORS preflight response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "CORS preflight response"
